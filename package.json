@@ -1,0 +1,37 @@
+{
+  "name": "netproject",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Windows WiFi heatmap desktop survey tool",
+  "type": "module",
+  "scripts": {
+    "dev": "concurrently -k \"npm:dev:server\" \"npm:dev:renderer\"",
+    "dev:server": "cross-env NODE_ENV=development node server/index.mjs",
+    "dev:renderer": "vite",
+    "build": "npm run build:renderer",
+    "build:renderer": "vite build",
+    "preview": "vite preview",
+    "start": "cross-env NODE_ENV=production node server/index.mjs"
+  },
+  "keywords": [
+    "electron",
+    "wifi",
+    "heatmap"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4"
+  },
+  "devDependencies": {
+    "@types/node": "^25.5.0",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react-swc": "^3.7.0",
+    "concurrently": "^9.2.1",
+    "cross-env": "^7.0.3",
+    "typescript": "^5.4.5",
+    "vite": "^5.4.19"
+  }
+}
