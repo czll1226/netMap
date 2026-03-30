@@ -1,8 +1,8 @@
 import { createServer } from "node:http";
-import { exec } from "node:child_process";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { scanWifiEnvironment } from "./wifi.mjs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -10,28 +10,27 @@ const rootDir = path.resolve(__dirname, "..");
 const distDir = path.join(rootDir, "dist");
 const devServerUrl = process.env.VITE_DEV_SERVER_URL ?? "http://127.0.0.1:5173";
 const port = Number(process.env.PORT ?? 8787);
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "GET,OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type, Accept",
+};
 
 const sendJson = (res, payload, statusCode = 200) => {
-  res.writeHead(statusCode, { "Content-Type": "application/json; charset=utf-8" });
+  res.writeHead(statusCode, {
+    ...corsHeaders,
+    "Content-Type": "application/json; charset=utf-8",
+  });
   res.end(JSON.stringify(payload));
 };
 
 const sendText = (res, text, statusCode = 200) => {
-  res.writeHead(statusCode, { "Content-Type": "text/plain; charset=utf-8" });
+  res.writeHead(statusCode, {
+    ...corsHeaders,
+    "Content-Type": "text/plain; charset=utf-8",
+  });
   res.end(text);
 };
-
-const runCommand = (command) =>
-  new Promise((resolve, reject) => {
-    exec(command, { windowsHide: true }, (error, stdout, stderr) => {
-      if (error) {
-        reject(new Error(stderr || error.message));
-        return;
-      }
-
-      resolve(stdout);
-    });
-  });
 
 const handleApi = async (req, res) => {
   if (req.url === "/api/runtime-info") {
@@ -48,10 +47,10 @@ const handleApi = async (req, res) => {
     return true;
   }
 
-  if (req.url === "/api/scan" && req.method === "GET") {
+  if (req.url === "/api/wifi/scan" && req.method === "GET") {
     try {
-      const output = await runCommand("netsh wlan show interfaces");
-      sendJson(res, { raw: output });
+      const snapshot = await scanWifiEnvironment();
+      sendJson(res, snapshot);
     } catch (error) {
       sendJson(
         res,
@@ -80,6 +79,12 @@ const resolveContentType = (filePath) => {
 const server = createServer(async (req, res) => {
   if (!req.url) {
     sendText(res, "Bad Request", 400);
+    return;
+  }
+
+  if (req.method === "OPTIONS") {
+    res.writeHead(204, corsHeaders);
+    res.end();
     return;
   }
 
