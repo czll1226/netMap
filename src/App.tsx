@@ -101,9 +101,9 @@ const formatTime = (value: string) =>
   }).format(new Date(value));
 
 const getHeatColor = (intensity: number) => {
-  const hue = 208 - intensity * 185;
-  const alpha = 0.16 + intensity * 0.62;
-  return `hsla(${hue}, 88%, ${58 - intensity * 16}%, ${alpha})`;
+  const hue = 214 - intensity * 206;
+  const alpha = 0.28 + intensity * 0.64;
+  return `hsla(${hue}, 94%, ${50 - intensity * 18}%, ${alpha})`;
 };
 
 const getMarkerColor = (quality: number | null) => {
@@ -130,6 +130,8 @@ function App() {
   const [isCalibrating, setIsCalibrating] = useState(false);
   const [loadingScan, setLoadingScan] = useState(false);
   const [pendingPlacement, setPendingPlacement] = useState(false);
+  const [mapDimLevel, setMapDimLevel] = useState(38);
+  const [heatmapStrengthLevel, setHeatmapStrengthLevel] = useState(92);
   const [selectedBssid, setSelectedBssid] = useState("");
   const [uiMessage, setUiMessage] = useState("先导入底图并完成比例校准，然后扫描当前位置并在图上落点。");
   const [uiError, setUiError] = useState("");
@@ -151,6 +153,16 @@ function App() {
     "未识别";
   const currentSameSsidCount = liveSnapshot?.relatedAccessPoints.length ?? 0;
   const calibrationDistance = calibration ? mapDistanceToMeters(calibration.start, calibration.end, calibration) : null;
+  const mapDimAlpha = 0.08 + (mapDimLevel / 100) * 0.58;
+  const mapImageFilter = `brightness(${(1 - (mapDimLevel / 100) * 0.42).toFixed(2)}) contrast(${(
+    1 +
+    (mapDimLevel / 100) * 0.16
+  ).toFixed(2)}) saturate(${(1 - (mapDimLevel / 100) * 0.08).toFixed(2)})`;
+  const heatmapOpacity = 0.42 + (heatmapStrengthLevel / 100) * 0.58;
+  const heatmapFilter = `blur(${Math.max(5, 13 - heatmapStrengthLevel * 0.06).toFixed(1)}px) saturate(${(
+    1.2 +
+    (heatmapStrengthLevel / 100) * 0.55
+  ).toFixed(2)}) contrast(${(1.04 + (heatmapStrengthLevel / 100) * 0.34).toFixed(2)})`;
 
   useEffect(() => {
     if (selectedBssid && accessPoints.some((item) => item.bssid === selectedBssid)) {
@@ -364,7 +376,7 @@ function App() {
           style={{ aspectRatio: `${mapAspectRatio}` }}
         >
           {mapAsset ? (
-            <img className="map-image" src={mapAsset.dataUrl} alt={mapAsset.name} />
+            <img className="map-image" src={mapAsset.dataUrl} alt={mapAsset.name} style={{ filter: mapImageFilter }} />
           ) : (
             <div className="map-placeholder">
               <strong>先放底图，再把现场信号画进去</strong>
@@ -372,10 +384,17 @@ function App() {
             </div>
           )}
 
+          {mapAsset ? <div className="map-dim-layer" style={{ background: `rgba(3, 10, 20, ${mapDimAlpha.toFixed(2)})` }} /> : null}
           <div className="map-grid" />
 
           {heatmapCells.length ? (
-            <svg className="heatmap-layer" viewBox={getViewBox(mapAspectRatio)} preserveAspectRatio="none" aria-hidden="true">
+            <svg
+              className="heatmap-layer"
+              viewBox={getViewBox(mapAspectRatio)}
+              preserveAspectRatio="none"
+              aria-hidden="true"
+              style={{ opacity: heatmapOpacity, filter: heatmapFilter }}
+            >
               {heatmapCells.map((cell, index) => (
                 <rect
                   key={`${cell.x}-${cell.y}-${index}`}
@@ -547,10 +566,44 @@ function App() {
             </button>
           </div>
 
+          <div className="display-tuning">
+            <label className="field">
+              <span>底图压暗</span>
+              <div className="range-row">
+                <input
+                  className="range-input"
+                  type="range"
+                  min="0"
+                  max="80"
+                  step="1"
+                  value={mapDimLevel}
+                  onChange={(event) => setMapDimLevel(Number(event.target.value))}
+                />
+                <strong>{mapDimLevel}%</strong>
+              </div>
+            </label>
+
+            <label className="field">
+              <span>热力强度</span>
+              <div className="range-row">
+                <input
+                  className="range-input"
+                  type="range"
+                  min="40"
+                  max="100"
+                  step="1"
+                  value={heatmapStrengthLevel}
+                  onChange={(event) => setHeatmapStrengthLevel(Number(event.target.value))}
+                />
+                <strong>{heatmapStrengthLevel}%</strong>
+              </div>
+            </label>
+          </div>
+
           {calibration ? (
-            <p className="helper-copy">采样点和 AP 估算都会按这条标注线转换成米制坐标。更换底图后请重新校准。</p>
+            <p className="helper-copy">采样点和 AP 估算都会按这条标注线转换成米制坐标。白色底图可以把底图压暗调到 35% 以上。</p>
           ) : (
-            <p className="helper-copy">输入米数后点击“开始校准”，再到地图上依次点两个端点。</p>
+            <p className="helper-copy">输入米数后点击“开始校准”，再到地图上依次点两个端点。白底图可用上面的显示增强提高热力图对比。</p>
           )}
         </section>
 
