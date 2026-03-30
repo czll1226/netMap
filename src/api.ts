@@ -1,8 +1,8 @@
 import type { RuntimeInfo, WifiSnapshot } from "./types";
 
 const LOCAL_API_ORIGIN = "http://127.0.0.1:8787";
-const HTML_RESPONSE_MESSAGE = "API returned HTML instead of JSON. The renderer is not connected to the local service.";
-const NETWORK_ERROR_MESSAGE = "Unable to reach the local service at http://127.0.0.1:8787.";
+const HTML_RESPONSE_MESSAGE = "接口返回了 HTML 页面，说明前端没有连到本地服务。请同时启动 `npm run dev`。";
+const NETWORK_ERROR_MESSAGE = "无法连接到本地服务 http://127.0.0.1:8787。请确认本地服务正在运行。";
 
 class ApiRequestError extends Error {
   constructor(
@@ -24,13 +24,9 @@ const buildApiUrls = (path: string) => {
   return [...new Set([normalizedPath, new URL(normalizedPath, LOCAL_API_ORIGIN).toString()])];
 };
 
-const readJsonBody = async <T>(response: Response) => {
-  return (await response.json()) as T;
-};
+const readJsonBody = async <T>(response: Response) => (await response.json()) as T;
 
-const readTextBody = async (response: Response) => {
-  return await response.text();
-};
+const readTextBody = async (response: Response) => await response.text();
 
 const parseSuccessPayload = async <T>(response: Response, fallbackMessage: string) => {
   const contentType = response.headers.get("content-type") ?? "";
@@ -105,10 +101,6 @@ const requestJson = async <T>(path: string, fallbackMessage: string): Promise<T>
         continue;
       }
 
-      if (hasNextCandidate && normalizedError instanceof TypeError) {
-        continue;
-      }
-
       throw normalizedError;
     }
   }
@@ -117,9 +109,9 @@ const requestJson = async <T>(path: string, fallbackMessage: string): Promise<T>
 };
 
 export async function getRuntimeInfo(): Promise<RuntimeInfo> {
-  return await requestJson<RuntimeInfo>("/api/runtime-info", "Failed to load runtime info.");
+  return await requestJson<RuntimeInfo>("/api/runtime-info", "无法获取运行环境信息。");
 }
 
 export async function scanWifiEnvironment(): Promise<WifiSnapshot> {
-  return await requestJson<WifiSnapshot>("/api/wifi/scan", "WiFi scan failed.");
+  return await requestJson<WifiSnapshot>("/api/wifi/scan", "WiFi 扫描失败。");
 }

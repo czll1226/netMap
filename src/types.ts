@@ -51,6 +51,25 @@ export interface WifiSnapshot {
   relatedAccessPoints: AccessPoint[];
 }
 
+export interface MapPoint {
+  x: number;
+  y: number;
+}
+
+export interface MapAssetState {
+  name: string;
+  dataUrl: string;
+  aspectRatio: number;
+}
+
+export interface MapCalibration {
+  start: MapPoint;
+  end: MapPoint;
+  distanceMeters: number;
+  aspectRatio: number;
+  metersPerMapUnit: number;
+}
+
 export interface SurveyReading {
   bssid: string;
   ssid: string;
@@ -62,11 +81,9 @@ export interface SurveyReading {
   channel: number | null;
 }
 
-export interface SurveySample {
+export interface SurveySample extends MapPoint {
   id: string;
   label: string;
-  x: number;
-  y: number;
   capturedAt: string;
   sourceScanAt: string;
   readings: SurveyReading[];
@@ -85,11 +102,9 @@ export interface SurveyAccessPoint {
   strongestSignalQuality: number | null;
 }
 
-export interface AccessPointEstimate {
+export interface AccessPointEstimate extends MapPoint {
   bssid: string;
   displaySsid: string;
-  x: number;
-  y: number;
   confidence: number;
   sampleCount: number;
   strongestSignalDbm: number | null;
